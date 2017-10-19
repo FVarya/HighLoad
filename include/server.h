@@ -7,6 +7,7 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include "connection.h"
+#include "request.h"
 
 using namespace boost::asio;
 

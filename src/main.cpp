@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
 	getcwd(cwd, sizeof(cwd));
 	std::string root_dir(cwd);
     	int port = 80;
-	std::string adress = "127.0.0.1";
+	std::string adress = "0.0.0.0";
 
     	unsigned thread = std::thread::hardware_concurrency();
 

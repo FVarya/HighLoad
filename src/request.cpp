@@ -1,14 +1,11 @@
-#include <iostream>
 #include <fstream>
-#include <sstream>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <sys/stat.h>
 #include "request.h"
 
 RequestHandler::RequestHandler(const std::string &dir)
         : root_dir(dir) {}
 
-void RequestHandler::handle_request(const std::string &request, std::function<void (std::vector<boost::asio::const_buffer>)> writeCallback) {
+void RequestHandler::handle_request(const std::string &request, std::function<void (const std::string&)> writeCallback) {
     std::istringstream iss(request);
     std::string method, url, protocol = "HTTP/1.1";
     iss >> method >> url >> protocol;
@@ -36,7 +33,7 @@ void RequestHandler::handle_request(const std::string &request, std::function<vo
 }
 
 void RequestHandler::GET(const std::string &url, const std::string &protocol,
-                         std::function<void (std::vector<boost::asio::const_buffer> msg)> writeCallback) {
+                         std::function<void (const std::string&)> writeCallback) {
     std::string path = root_dir + url;
     bool dir;
     if ((dir = is_directory(path))) {
@@ -45,32 +42,22 @@ void RequestHandler::GET(const std::string &url, const std::string &protocol,
     }
 
     if (file_exists(path)) {
-    	std::vector<boost::asio::const_buffer>  buffers;
 	std::string ext = dir ? "html" : get_extension(url);
-	std::string str= reply::build_headers(file_size(path), ext, protocol, reply::ok);
-	char buffer[1024];
-    	strncpy(buffer, str.c_str(), sizeof(buffer));
-    	buffers.push_back(boost::asio::buffer(buffer, strlen(buffer)));
+	writeCallback(reply::build_headers(file_size(path), ext, protocol, reply::ok));
 
         std::ifstream in(path);
-        char buff[BUFFER_SIZE];
-        while (in) {
-	    in.read(buff, BUFFER_SIZE);
-            buffers.push_back(boost::asio::buffer(buff, in.gcount()));	
-        }
-	writeCallback(buffers);
+
+        char buffer[BUFFER_SIZE];
+        while (size_t count = (size_t)in.readsome(buffer, BUFFER_SIZE)) {
+            writeCallback(std::string(buffer, count));
+	}
     } else {
-    	std::vector<boost::asio::const_buffer>  buffers;
-	std::string str= reply::build_headers(-1, "html", protocol, (dir) ? reply::forbidden : reply::not_found);
-	char buffer[1024];
-    	strncpy(buffer, str.c_str(), sizeof(buffer));
-    	buffers.push_back(boost::asio::buffer(buffer, strlen(buffer)));
-        writeCallback(buffers);
+        writeCallback(reply::build_headers(-1, "html", protocol, (dir) ? reply::forbidden : reply::not_found));
     }
 }
 
 void RequestHandler::HEAD(const std::string &url, const std::string &protocol,
-                          std::function<void (std::vector<boost::asio::const_buffer> msg)> writeCallback) {
+                          std::function<void (const std::string&)> writeCallback) {
     std::string path = root_dir + url;
     bool dir;
     if ((dir = is_directory(path))) {
@@ -79,31 +66,16 @@ void RequestHandler::HEAD(const std::string &url, const std::string &protocol,
     }
 
     if (file_exists(path)) {
-    	std::vector<boost::asio::const_buffer>  buffers;
 	std::string ext = dir ? "html" : get_extension(url);
-	std::string str= reply::build_headers(file_size(path), ext, protocol, reply::ok);
-	char buffer[1024];
-    	strncpy(buffer, str.c_str(), sizeof(buffer));
-    	buffers.push_back(boost::asio::buffer(buffer, strlen(buffer)));
-	writeCallback(buffers);
+	writeCallback(reply::build_headers(file_size(path), ext, protocol, reply::ok));
     } else {
-    	std::vector<boost::asio::const_buffer>  buffers;
-	std::string str= reply::build_headers(-1, "html", protocol, (dir) ? reply::forbidden : reply::not_found);
-	char buffer[1024];
-    	strncpy(buffer, str.c_str(), sizeof(buffer));
-    	buffers.push_back(boost::asio::buffer(buffer, strlen(buffer)));
-	writeCallback(buffers);
+	writeCallback(reply::build_headers(-1, "html", protocol, (dir) ? reply::forbidden : reply::not_found));
     }
 }
 
 void RequestHandler::NotAllowed(const std::string &protocol,
-                                std::function<void (std::vector<boost::asio::const_buffer> msg)> writeCallback) {
-    std::vector<boost::asio::const_buffer>  buffers;
-    std::string str= reply::build_headers(-1, "html", protocol, reply::not_allowed);
-    char buffer[1024];
-    strncpy(buffer, str.c_str(), sizeof(buffer));
-    buffers.push_back(boost::asio::buffer(buffer, strlen(buffer)));
-    writeCallback(buffers);
+                                std::function<void (const std::string&)> writeCallback) {
+    writeCallback(reply::build_headers(-1, "html", protocol, reply::not_allowed));
 }
 
 std::string RequestHandler::url_decode(const std::string &url) {

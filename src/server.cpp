@@ -1,14 +1,10 @@
 #include <iostream>
 #include <boost/thread.hpp>
 #include <vector>
-#include "request.h"
 #include "server.h"
 
 void Server::startAccept() {
-	boost::shared_ptr<Connection> connection(new Connection(io_service_, request_handler,
-		[this](const std::string& reason) {
-		std::cout << reason << std::endl;
-	}));
+	boost::shared_ptr<Connection> connection(new Connection(io_service_, request_handler));
 
 	acceptor.async_accept(connection->sock(), boost::bind(&Server::handleAccept, this, connection, placeholders::error));
 }
@@ -22,10 +18,9 @@ void Server::handleAccept(boost::shared_ptr<Connection> connection, const boost:
 }
 Server::Server(const std::string& address, const int& port,
 	std::size_t threadPoolSize, const std::string& rootDir)
-  : threadPoolSize(threadPoolSize),
+  	: threadPoolSize(threadPoolSize),
 	acceptor(io_service_),
-	request_handler(rootDir)
-{
+	request_handler(rootDir){
 
 
 	ip::tcp::endpoint ep(ip::address::from_string(address), port);

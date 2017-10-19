@@ -1,7 +1,6 @@
-#include <iostream>
 #include <sstream>
-#include <string>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <unordered_map>
 #include "reply.h"
 
 namespace status_strings {
@@ -37,7 +36,6 @@ namespace status_strings {
 }
 
 namespace content_strings {
-	//const char ok[] = "";
 	const std::string forbidden =
 	  "<html>"
 	  "<head><title>Forbidden</title></head>"
@@ -76,36 +74,19 @@ namespace content_strings {
 }
 
 namespace mime_types{
-	struct mapping
-	{
-	  const char* extension;
-	  const char* mime_type;
-	} mappings[] =
-	{
-	  { "gif", "image/gif" },
-	  { "htm", "text/html" },
-	  { "html", "text/html" },
-	  { "jpg", "image/jpeg" },
-	  { "png", "image/png" },
-	  { "css", "text/css"}, 
-	  { "js", "application/javascript" },
-	  { "jpeg", "image/jpeg" },
-          { "swf", "application/x-shockwave-flash" },
-	  { 0, 0 } 
-	};
 
-	std::string extension_to_type(const std::string& extension)
-	{
-	  for (mapping* m = mappings; m->extension; ++m)
-	  {
-	    if (m->extension == extension)
-	    {
-	      return m->mime_type;
-	    }
-	  }
-
-	  return "text/plain";
-	}
+	 std::unordered_map<std::string, std::string> ext_to_mime =
+            {
+                    { "txt", "text/plain" },
+                    { "html", "text/html" },
+                    { "css", "text/css" },
+                    { "js", "application/javascript" },
+                    { "jpg", "image/jpeg" },
+                    { "jpeg", "image/jpeg" },
+                    { "png", "image/png" },
+                    { "gif", "image/gif" },
+                    { "swf", "application/x-shockwave-flash" }
+            };
 }
 
 std::string reply::message_headers() {
@@ -118,30 +99,21 @@ std::string reply::message_headers() {
 }
 
 std::string reply::build_headers(int length, const std::string& ext, const std::string &protocol, reply::status_type status){
-	/*std::ostringstream headers;
-	headers << "Content-Length: " << length << "\r\n"
-    		<< "Content-Type: " << mime_types[ext] << "\r\n";*/
+	std::ostringstream response;
 
-	std::stringstream response;
-
-	const std::string content = content_strings::to_string(status);
+	const std::string& content = content_strings::to_string(status);
 	const int size =  (length == -1) ? content.size() : length;	
 	
 	response << protocol << ' ' 
 		 << status_strings::to_string(status) 
 		 << message_headers()
 		 << "Content-Length: " << size << "\r\n"
-		 << "Content-Type: " << mime_types::extension_to_type(ext) << "\r\n\r\n";
+		 << "Content-Type: " << mime_types::ext_to_mime[ext] << "\r\n\r\n";
 
 
 	if(status != ok){
 		response << content;		
 	}
-	const std::string str = response.str();
-        const char* ch = str.c_str();
-	return response.str();
 
-	/*char buffer[1024];
-	response.read(buffer, 1024);
-        return boost::asio::buffer(buffer, response.gcount());*/
+	return response.str();
 }

@@ -1,9 +1,7 @@
 #ifndef REPLY_H
 #define REPLY_H
 
-
-#include <unordered_map>
-#include <boost/asio.hpp>
+#include <string>
 
 struct reply{
 	
@@ -14,21 +12,6 @@ struct reply{
 		not_allowed = 405,
 		not_implemented = 501
 	} status;
-
-
-
-	/*std::unordered_map<std::string, std::string> mime_types = {
-                    { "txt", "text/plain" },
-                    { "html", "text/html" },
-                    { "css", "text/css" },
-                    { "js", "application/javascript" },
-                    { "jpg", "image/jpeg" },
-                    { "jpeg", "image/jpeg" },
-                    { "png", "image/png" },
-                    { "gif", "image/gif" },
-                    { "swf", "application/x-shockwave-flash" }
-        };*/
-
 
 	static std::string message_headers();
 
